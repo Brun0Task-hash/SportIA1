@@ -1,17 +1,26 @@
-from mcp.server.fastmcp import FastMCP
-from typing import Literal
-from openai import AzureOpenAI
 import os
 import json
+from dotenv import load_dotenv 
+from openai import AzureOpenAI
+from mcp.server.fastmcp import FastMCP
+from typing import Literal
 
-# Inicialización del servidor MCP
+## Cargamos explícitamente el archivo .env desde la carpeta actual
+load_dotenv()
+
+## Obtenemos la llave y verificamos que exista
+api_key = os.getenv("AZURE_OPENAI_KEY")
+
+if not api_key:
+    print("ERROR: No se encontró AZURE_OPENAI_KEY. Verifica el archivo .env")
+
 mcp = FastMCP("SportIA1")
 DB_PATH = "e:/python/Modulo 5/SportIA1/datos_entreno.json"
 
-# CONFIGURACIÓN DE AZURE
+## Inicialización del cliente con validación
 client = AzureOpenAI(
     azure_endpoint="https://khipusaigpt0566189501.services.ai.azure.com",
-    api_key=os.getenv("AZURE_OPENAI_KEY"), # Leemos la llave de forma segura
+    api_key=api_key,
     api_version="2023-05-15"
 )
 
@@ -85,7 +94,7 @@ def chat_fitness_experto(pregunta: str):
         )
         return response.choices[0].message.content
     except Exception as e:
-        # Si falla Azure, devolvemos el error pero el servidor no se cae
+        # Si falla Azure, devolvemos el error
         return f"Error de conexión con Azure: {str(e)}"
 
 if __name__ == "__main__":
