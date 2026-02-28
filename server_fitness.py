@@ -75,26 +75,33 @@ def evaluar_progreso(ejercicio: EJERCICIOS):
 ## Herramienta de chat experto
 @mcp.tool()
 def chat_fitness_experto(pregunta: str):
-    """Chat inteligente con Azure OpenAI. Incluye historial para contexto real."""
+    """Chat inteligente limitado estrictamente a fitness y nutrición."""
     try:
         historial_contexto = ""
         if os.path.exists(DB_PATH):
             with open(DB_PATH, "r", encoding="utf-8") as f:
                 datos = json.load(f)
                 resumen = datos.get("historial", [])[-3:]
-                historial_contexto = f"\nDatos recientes de Bruno: {resumen}"
+                historial_contexto = f"\nDatos recientes del usuario: {resumen}"
 
-        # Llamada a Azure
+        # Definimos las reglas de comportamiento del Agente
+        SYSTEM_PROMPT = (
+            "Eres un entrenador experto de SportIA. Tu conocimiento se limita EXCLUSIVAMENTE a: "
+            "ejercicios, rutinas, nutrición deportiva, conteo de calorías y salud física. "
+            "Si el usuario pregunta sobre política, religión, programación o cualquier tema ajeno al fitness, "
+            "responde cortésmente: 'Lo siento, como experto de SportIA solo puedo ayudarte con tu entrenamiento y nutrición.' "
+            "Sé técnico, motivador y breve."
+        )
+
         response = client.chat.completions.create(
             model=AZURE_DEPLOYMENT,
             messages=[
-                {"role": "system", "content": "Eres un entrenador experto de SportIA. Responde breve y técnico."},
+                {"role": "system", "content": SYSTEM_PROMPT},
                 {"role": "user", "content": f"{historial_contexto}\nPregunta: {pregunta}"}
             ]
         )
         return response.choices[0].message.content
     except Exception as e:
-        # Si falla Azure, devolvemos el error
         return f"Error de conexión con Azure: {str(e)}"
 
 if __name__ == "__main__":
